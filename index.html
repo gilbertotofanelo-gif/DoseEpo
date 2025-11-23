@@ -1,75 +1,280 @@
-function calcularDoseEritropoetina(config) {
-    const {
-        pesoKg,
-        idade,
-        indicacao,
-        via = 'subcutânea',
-        ferroAdequado = false,
-        esquema = 'inicial'
-    } = config;
-
-    let dose, frequencia, observacoes;
-
-    // Baseado nas bulas de eritropoetina (alfa, beta, darbepoetina)
-    if (indicacao === 'anemia renal crônica') {
-        if (via === 'subcutânea') {
-            dose = esquema === 'inicial' ? '50-100 U/kg' : '25-50 U/kg';
-            frequencia = '3 vezes por semana';
-        } else { // intravenosa
-            dose = esquema === 'inicial' ? '25-100 U/kg' : '12.5-25 U/kg';
-            frequencia = '3 vezes por semana';
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Eritropoetina - Versão Corrigida</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f8ff;
         }
-        observacoes = 'Ajustar para manter Hb 10-12 g/dL. Reduzir dose se Hb > 12 g/dL.';
+        .container {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background: #2196F3;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: #1976D2;
+        }
+        .resultado {
+            background: #e8f4fd;
+            padding: 20px;
+            border-left: 4px solid #2196F3;
+            margin: 20px 0;
+            border-radius: 5px;
+            display: none;
+        }
+        .alerta {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .dose-correta {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧬 Calculadora de Dose de Eritropoetina</h1>
+        <p class="alerta">⚠️ <strong>ATENÇÃO:</strong> Este é um instrumento educacional. Sempre consulte a bula atualizada e protocolos institucionais.</p>
+        
+        <form id="formEritropoetina">
+            <div class="form-group">
+                <label for="peso">Peso (kg):</label>
+                <input type="number" id="peso" name="peso" min="1" max="300" required placeholder="Ex: 70">
+            </div>
+            
+            <div class="form-group">
+                <label for="idade">Idade (anos):</label>
+                <input type="number" id="idade" name="idade" min="0" max="120" required placeholder="Ex: 45">
+            </div>
+            
+            <div class="form-group">
+                <label for="indicacao">Indicação Clínica:</label>
+                <select id="indicacao" name="indicacao" required>
+                    <option value="anemia_renal">Anemia Renal Crônica</option>
+                    <option value="anemia_critica">Anemia Crítica (UTI/Paciente Hospitalizado)</option>
+                    <option value="quimioterapia">Anemia em Quimioterapia</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="via">Via de Administração:</label>
+                <select id="via" name="via" required>
+                    <option value="subcutanea">Subcutânea</option>
+                    <option value="intravenosa">Intravenosa</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="ferro">Status de Ferro:</label>
+                <select id="ferro" name="ferro" required>
+                    <option value="insuficiente">Ferro Insuficiente</option>
+                    <option value="adequado">Ferro Adequado</option>
+                </select>
+            </div>
+            
+            <button type="button" onclick="calcularDose()">Calcular Dose</button>
+            <button type="button" onclick="limparFormulario()">Limpar</button>
+        </form>
+        
+        <div id="resultado" class="resultado"></div>
+    </div>
 
-    } else if (indicacao === 'anemia crítica (UTI)') {
-        dose = '40.000 U';
-        frequencia = '1 vez por semana (esquema fixo)';
-        observacoes = 'Esquema fixo, não baseado em peso. Avaliar após 4 semanas.';
-
-    } else if (indicacao === 'quimioterapia') {
-        dose = '150 U/kg';
-        frequencia = '3 vezes por semana (SC) ou 40.000 U semanal';
-        observacoes = 'Iniciar se Hb < 10 g/dL. Suspender se Hb > 12 g/dL.';
-    }
-
-    // Cálculo base para renal (exemplo)
-    let doseCalculada = null;
-    if (indicacao === 'anemia renal crônica' && pesoKg) {
-        const doseMin = via === 'subcutânea' ? 50 : 25;
-        const doseMax = via === 'subcutânea' ? 100 : 100;
-        doseCalculada = {
-            minima: (pesoKg * doseMin).toFixed(0),
-            maxima: (pesoKg * doseMax).toFixed(0)
-        };
-    }
-
-    // Contraindicações importantes
-    const contraindicacoes = [
-        'Hipertensão não controlada',
-        'Histórico de trombose',
-        'Alergia ao produto',
-        'Policitemia vera'
-    ];
-
-    const alertas = [
-        'Monitorar pressão arterial semanalmente',
-        'Ferro sérico e saturação devem ser adequados antes de iniciar',
-        'Suspender se Hb > 12 g/dL',
-        'Risco de eventos tromboembólicos',
-        'Ajustar dose mensalmente conforme resposta'
-    ];
-
-    return {
-        indicacao,
-        via,
-        doseRecomendada: dose,
-        frequencia,
-        doseCalculada,
-        observacoes,
-        contraindicacoes,
-        alertas,
-        necessidadeFerro: !ferroAdequado ? 
-            'FERRO INSUFICIENTE: Reposição obrigatória antes de iniciar' : 
-            'Ferro adequado para início'
-    };
-}
+    <script>
+        function calcularDose() {
+            // Obter valores do formulário
+            const peso = parseFloat(document.getElementById('peso').value);
+            const idade = parseInt(document.getElementById('idade').value);
+            const indicacao = document.getElementById('indicacao').value;
+            const via = document.getElementById('via').value;
+            const ferro = document.getElementById('ferro').value;
+            
+            if (!peso || !idade) {
+                alert('Por favor, preencha todos os campos obrigatórios.');
+                return;
+            }
+            
+            // Calcular dose baseada nas indicações (conforme bula)
+            let resultado;
+            
+            if (indicacao === 'anemia_renal') {
+                resultado = calcularAnemiaRenal(peso, idade, via, ferro);
+            } else if (indicacao === 'anemia_critica') {
+                resultado = calcularAnemiaCritica(peso, idade, via, ferro);
+            } else if (indicacao === 'quimioterapia') {
+                resultado = calcularQuimioterapia(peso, idade, via, ferro);
+            }
+            
+            exibirResultado(resultado, peso, idade);
+        }
+        
+        function calcularAnemiaRenal(peso, idade, via, ferro) {
+            let doseMin, doseMax, frequencia, observacoes;
+            
+            if (via === 'subcutanea') {
+                doseMin = 50;
+                doseMax = 100;
+                frequencia = '3 vezes por semana';
+                observacoes = 'Via preferencial para pacientes em diálise peritoneal ou tratamento conservador.';
+            } else {
+                doseMin = 25;
+                doseMax = 100;
+                frequencia = '3 vezes por semana';
+                observacoes = 'Via indicada para pacientes em hemodiálise.';
+            }
+            
+            const doseMinTotal = peso * doseMin;
+            const doseMaxTotal = peso * doseMax;
+            
+            return {
+                titulo: 'ANEMIA RENAL CRÔNICA',
+                dose: `${doseMin}-${doseMax} U/kg`,
+                doseTotal: `${doseMinTotal.toFixed(0)} - ${doseMaxTotal.toFixed(0)} U`,
+                frequencia: frequencia,
+                observacoes: observacoes,
+                alvoHb: '10-12 g/dL',
+                ajuste: 'Reduzir dose em 25% se Hb > 12 g/dL. Suspender se Hb > 13 g/dL.'
+            };
+        }
+        
+        function calcularAnemiaCritica(peso, idade, via, ferro) {
+            // Esquema FIXO para anemia crítica (não baseado em peso)
+            const doseFixa = 40000;
+            
+            return {
+                titulo: 'ANEMIA CRÍTICA (UTI/PACIENTE HOSPITALIZADO)',
+                dose: 'ESQUEMA FIXO',
+                doseTotal: `${doseFixa.toFixed(0)} U`,
+                frequencia: '1 vez por semana',
+                observacoes: 'Esquema fixo semanal. Avaliar resposta após 4 semanas.',
+                alvoHb: '10-12 g/dL',
+                ajuste: 'SUSPENDER IMEDIATAMENTE se Hb > 12 g/dL. Risco aumentado de trombose.'
+            };
+        }
+        
+        function calcularQuimioterapia(peso, idade, via, ferro) {
+            const dosePorKg = 150;
+            const doseTotal = peso * dosePorKg;
+            const doseFixa = 40000;
+            
+            return {
+                titulo: 'ANEMIA EM QUIMIOTERAPIA',
+                dose: `${dosePorKg} U/kg ou esquema fixo`,
+                doseTotal: `${doseTotal.toFixed(0)} U (3x/semana) ou ${doseFixa} U (semanal)`,
+                frequencia: '3 vezes por semana ou 1 vez por semana',
+                observacoes: 'Iniciar apenas se Hb < 10 g/dL. Suspender após conclusão da quimioterapia.',
+                alvoHb: '10-12 g/dL',
+                ajuste: 'Suspender se Hb > 12 g/dL.'
+            };
+        }
+        
+        function exibirResultado(resultado, peso, idade) {
+            const divResultado = document.getElementById('resultado');
+            const necessidadeFerro = document.getElementById('ferro').value === 'insuficiente' 
+                ? '🚨 REPOSIÇÃO DE FERRO OBRIGATÓRIA antes de iniciar tratamento'
+                : '✅ Níveis de ferro adequados para início do tratamento';
+            
+            divResultado.innerHTML = `
+                <h3>💊 Resultado do Cálculo - ${resultado.titulo}</h3>
+                
+                <div class="dose-correta">
+                    <h4>📋 Dados do Paciente:</h4>
+                    <p><strong>Peso:</strong> ${peso} kg</p>
+                    <p><strong>Idade:</strong> ${idade} anos</p>
+                    <p><strong>Via:</strong> ${document.getElementById('via').value === 'subcutanea' ? 'Subcutânea' : 'Intravenosa'}</p>
+                </div>
+                
+                <div class="dose-correta">
+                    <h4>💉 Posologia Recomendada:</h4>
+                    <p><strong>Dose:</strong> ${resultado.dose}</p>
+                    <p><strong>Dose Total:</strong> ${resultado.doseTotal}</p>
+                    <p><strong>Frequência:</strong> ${resultado.frequencia}</p>
+                    <p><strong>Observações:</strong> ${resultado.observacoes}</p>
+                </div>
+                
+                <div class="alerta">
+                    <h4>⚡ Condições e Ajustes:</h4>
+                    <p><strong>Alvo de Hemoglobina:</strong> ${resultado.alvoHb}</p>
+                    <p><strong>Ajuste de Dose:</strong> ${resultado.ajuste}</p>
+                    <p><strong>Status do Ferro:</strong> ${necessidadeFerro}</p>
+                </div>
+                
+                <div class="alerta">
+                    <h4>⚠️ Alertas de Segurança:</h4>
+                    <ul>
+                        <li>Monitorar pressão arterial semanalmente</li>
+                        <li>Risco de eventos tromboembólicos</li>
+                        <li>Monitorar hemoglobina semanalmente</li>
+                        <li>Suspender se hipertensão não controlada</li>
+                        <li>Contraindicado em policitemia vera</li>
+                    </ul>
+                </div>
+                
+                <p><em>💡 Lembrete: Sempre verificar a bula específica do produto e protocolos institucionais.</em></p>
+            `;
+            
+            divResultado.style.display = 'block';
+        }
+        
+        function limparFormulario() {
+            document.getElementById('formEritropoetina').reset();
+            document.getElementById('resultado').style.display = 'none';
+        }
+        
+        // Exemplo de preenchimento automático para teste
+        function preencherExemplo() {
+            document.getElementById('peso').value = 70;
+            document.getElementById('idade').value = 45;
+            document.getElementById('indicacao').value = 'anemia_critica';
+            document.getElementById('via').value = 'subcutanea';
+            document.getElementById('ferro').value = 'insuficiente';
+        }
+        
+        // Preencher com exemplo ao carregar a página (opcional)
+        // document.addEventListener('DOMContentLoaded', preencherExemplo);
+    </script>
+</body>
+</html>
