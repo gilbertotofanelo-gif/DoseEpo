@@ -1,0 +1,80 @@
+function calcularDoseEritropoetina(config) {
+  // Configurações fornecidas pelo usuário
+  const {
+    pesoKg,
+    idade = null,
+    indicacao = 'anemia renal', // 'anemia crítica', 'anemia renal', etc.
+    doseUkg = null, // Se não fornecida, aplica valores sugeridos por indicação
+    divisao = 'diária', // 'diária', '12h', '3x semana'
+    ferroAdequado = false,
+    via = 'subcutânea' // 'subcutânea' ou 'intravenosa'
+  } = config;
+
+  // Dosagem padrão conforme indicação clínica
+  let doseBase;
+  if (doseUkg) {
+    doseBase = doseUkg;
+  } else {
+    if (indicacao == 'anemia crítica') {
+      doseBase = 300; // pode ser ajustado conforme o protocolo local
+    } else if (indicacao == 'anemia renal') {
+      doseBase = 150;
+    } else {
+      doseBase = 150;
+    }
+  }
+
+  // Ajuste para crianças (exemplo genérico)
+  let doseFinal = doseBase;
+  if (idade && idade < 18) {
+    doseFinal = doseBase * 1.5; // Crianças podem necessitar dose maior
+  }
+
+  // Dose total diária
+  const doseTotalDia = pesoKg * doseFinal;
+
+  // Recomendações
+  let recomendaFerro = ferroAdequado ? 'Ferro adequado, seguir.' : 'Recomenda-se garantir reposição de ferro antes e durante o uso.';
+  let alertaLab = 'Monitorar hemoglobina/hematócrito semanalmente. Ajustar dose conforme resposta laboratorial.';
+  let alertaEfeitos = 'Aviso: risco de hipertensão, trombose, reação alérgica. Acompanhar pressão arterial e exames de coagulação.';
+  let viaAdmin = via === 'intravenosa'
+    ? 'Via intravenosa recomendada para situações agudas ou UTI.'
+    : 'Via subcutânea é eficaz e pode ser usada em casos crônicos ou quando adequada.';
+  let doseDividida = divisao === '12h'
+    ? `Divida a dose diária em duas administrações de ${doseTotalDia / 2} U a cada 12 horas.`
+    : divisao === '3x semana' 
+      ? `Divida a dose total semanal (${doseTotalDia * 7}) U em 3 aplicações semanais.`
+      : `Administração diária recomendada: ${doseTotalDia} U/dia.`;
+
+  return {
+    pesoKg,
+    idade,
+    indicacao,
+    dosePorKg: doseFinal,
+    doseTotalDia,
+    doseDividida,
+    recomendaFerro,
+    viaAdmin,
+    alertaLab,
+    alertaEfeitos,
+  };
+}
+
+// Exemplo de uso:
+const configPaciente = {
+  pesoKg: 70,
+  idade: 45,
+  indicacao: 'anemia crítica',
+  ferroAdequado: false,
+  via: 'intravenosa',
+  divisao: '12h'
+};
+const resultado = calcularDoseEritropoetina(configPaciente);
+
+console.log(`Dose: ${resultado.doseTotalDia} U/dia`);
+console.log(resultado.doseDividida);
+console.log(resultado.recomendaFerro);
+console.log(resultado.viaAdmin);
+console.log(resultado.alertaLab);
+console.log(resultado.alertaEfeitos);
+
