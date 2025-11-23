@@ -69,6 +69,13 @@
             margin: 10px 0;
             border-radius: 5px;
         }
+        .via-recomendada {
+            background: #e8f4fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
         h1 {
             color: #2c3e50;
             text-align: center;
@@ -93,10 +100,21 @@
             
             <div class="form-group">
                 <label for="indicacao">Indicação Clínica:</label>
-                <select id="indicacao" name="indicacao" required>
+                <select id="indicacao" name="indicacao" required onchange="atualizarOpcoesVia()">
                     <option value="anemia_renal">Anemia Renal Crônica</option>
                     <option value="anemia_critica">Anemia Crítica (UTI/Paciente Hospitalizado)</option>
                     <option value="quimioterapia">Anemia em Quimioterapia</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="situacao">Situação do Paciente:</label>
+                <select id="situacao" name="situacao" required onchange="atualizarOpcoesVia()">
+                    <option value="ambulatorial">Paciente Ambulatorial</option>
+                    <option value="hospitalizado">Paciente Hospitalizado</option>
+                    <option value="hemodialise">Paciente em Hemodiálise</option>
+                    <option value="dialise_peritoneal">Paciente em Diálise Peritoneal</option>
+                    <option value="uti">Paciente em UTI</option>
                 </select>
             </div>
             
@@ -124,11 +142,89 @@
     </div>
 
     <script>
+        function atualizarOpcoesVia() {
+            const indicacao = document.getElementById('indicacao').value;
+            const situacao = document.getElementById('situacao').value;
+            const viaSelect = document.getElementById('via');
+            
+            // Limpar opções atuais
+            viaSelect.innerHTML = '';
+            
+            // Determinar via recomendada baseada na indicação e situação
+            let viaRecomendada = recomendarVia(indicacao, situacao);
+            
+            // Adicionar opções
+            const opcaoSC = document.createElement('option');
+            opcaoSC.value = 'subcutanea';
+            opcaoSC.textContent = 'Subcutânea';
+            if (viaRecomendada.via === 'subcutânea') {
+                opcaoSC.selected = true;
+            }
+            
+            const opcaoIV = document.createElement('option');
+            opcaoIV.value = 'intravenosa';
+            opcaoIV.textContent = 'Intravenosa';
+            if (viaRecomendada.via === 'intravenosa') {
+                opcaoIV.selected = true;
+            }
+            
+            viaSelect.appendChild(opcaoSC);
+            viaSelect.appendChild(opcaoIV);
+        }
+        
+        function recomendarVia(indicacao, situacao) {
+            if (indicacao === 'anemia_renal') {
+                if (situacao === 'hemodialise') {
+                    return {
+                        via: 'intravenosa',
+                        justificativa: 'Paciente em hemodiálise - via IV durante sessão dialítica',
+                        frequencia: '3 vezes por semana',
+                        observacao: 'Administrar no final da sessão de hemodiálise'
+                    };
+                } else {
+                    return {
+                        via: 'subcutânea',
+                        justificativa: 'Paciente não dialítico ou em diálise peritoneal',
+                        frequencia: '1-3 vezes por semana',
+                        observacao: 'Via preferencial para tratamento ambulatorial'
+                    };
+                }
+            }
+
+            if (indicacao === 'anemia_critica') {
+                if (situacao === 'uti' || situacao === 'hospitalizado') {
+                    return {
+                        via: 'intravenosa',
+                        justificativa: 'Paciente crítico hospitalizado com acesso venoso',
+                        frequencia: '1 vez por semana',
+                        observacao: 'Esquema fixo de 40.000 U/semana'
+                    };
+                } else {
+                    return {
+                        via: 'subcutânea',
+                        justificativa: 'Paciente estável ou em transição para ambulatório',
+                        frequencia: '1 vez por semana',
+                        observacao: 'Mesma eficácia com maior praticidade'
+                    };
+                }
+            }
+
+            if (indicacao === 'quimioterapia') {
+                return {
+                    via: 'subcutânea',
+                    justificativa: 'Paciente ambulatorial em quimioterapia',
+                    frequencia: '1 vez por semana ou 3 vezes por semana',
+                    observacao: 'Prefere-se SC para maior comodidade do paciente'
+                };
+            }
+        }
+        
         function calcularDose() {
             // Obter valores do formulário
             const peso = parseFloat(document.getElementById('peso').value);
             const idade = parseInt(document.getElementById('idade').value);
             const indicacao = document.getElementById('indicacao').value;
+            const situacao = document.getElementById('situacao').value;
             const via = document.getElementById('via').value;
             const ferro = document.getElementById('ferro').value;
             
@@ -141,29 +237,29 @@
             let resultado;
             
             if (indicacao === 'anemia_renal') {
-                resultado = calcularAnemiaRenal(peso, idade, via, ferro);
+                resultado = calcularAnemiaRenal(peso, idade, via, situacao, ferro);
             } else if (indicacao === 'anemia_critica') {
-                resultado = calcularAnemiaCritica(peso, idade, via, ferro);
+                resultado = calcularAnemiaCritica(peso, idade, via, situacao, ferro);
             } else if (indicacao === 'quimioterapia') {
-                resultado = calcularQuimioterapia(peso, idade, via, ferro);
+                resultado = calcularQuimioterapia(peso, idade, via, situacao, ferro);
             }
             
-            exibirResultado(resultado, peso, idade);
+            exibirResultado(resultado, peso, idade, situacao);
         }
         
-        function calcularAnemiaRenal(peso, idade, via, ferro) {
+        function calcularAnemiaRenal(peso, idade, via, situacao, ferro) {
             let doseMin, doseMax, frequencia, observacoes;
             
             if (via === 'subcutanea') {
                 doseMin = 50;
                 doseMax = 100;
-                frequencia = '3 vezes por semana';
+                frequencia = situacao === 'hemodialise' ? '3 vezes por semana' : '1-3 vezes por semana';
                 observacoes = 'Via preferencial para pacientes em diálise peritoneal ou tratamento conservador.';
             } else {
                 doseMin = 25;
                 doseMax = 100;
                 frequencia = '3 vezes por semana';
-                observacoes = 'Via indicada para pacientes em hemodiálise.';
+                observacoes = 'Via indicada para pacientes em hemodiálise durante sessão dialítica.';
             }
             
             const doseMinTotal = peso * doseMin;
@@ -176,11 +272,12 @@
                 frequencia: frequencia,
                 observacoes: observacoes,
                 alvoHb: '10-12 g/dL',
-                ajuste: 'Reduzir dose em 25% se Hb > 12 g/dL. Suspender se Hb > 13 g/dL.'
+                ajuste: 'Reduzir dose em 25% se Hb > 12 g/dL. Suspender se Hb > 13 g/dL.',
+                via: via
             };
         }
         
-        function calcularAnemiaCritica(peso, idade, via, ferro) {
+        function calcularAnemiaCritica(peso, idade, via, situacao, ferro) {
             // Esquema FIXO para anemia crítica (não baseado em peso)
             const doseFixa = 40000;
             
@@ -191,11 +288,12 @@
                 frequencia: '1 vez por semana',
                 observacoes: 'Esquema fixo semanal. Avaliar resposta após 4 semanas.',
                 alvoHb: '10-12 g/dL',
-                ajuste: 'SUSPENDER IMEDIATAMENTE se Hb > 12 g/dL. Risco aumentado de trombose.'
+                ajuste: 'SUSPENDER IMEDIATAMENTE se Hb > 12 g/dL. Risco aumentado de trombose.',
+                via: via
             };
         }
         
-        function calcularQuimioterapia(peso, idade, via, ferro) {
+        function calcularQuimioterapia(peso, idade, via, situacao, ferro) {
             const dosePorKg = 150;
             const doseTotal = peso * dosePorKg;
             const doseFixa = 40000;
@@ -207,15 +305,21 @@
                 frequencia: '3 vezes por semana ou 1 vez por semana',
                 observacoes: 'Iniciar apenas se Hb < 10 g/dL. Suspender após conclusão da quimioterapia.',
                 alvoHb: '10-12 g/dL',
-                ajuste: 'Suspender se Hb > 12 g/dL.'
+                ajuste: 'Suspender se Hb > 12 g/dL.',
+                via: via
             };
         }
         
-        function exibirResultado(resultado, peso, idade) {
+        function exibirResultado(resultado, peso, idade, situacao) {
             const divResultado = document.getElementById('resultado');
             const necessidadeFerro = document.getElementById('ferro').value === 'insuficiente' 
                 ? '🚨 REPOSIÇÃO DE FERRO OBRIGATÓRIA antes de iniciar tratamento'
                 : '✅ Níveis de ferro adequados para início do tratamento';
+            
+            const viaRecomendacao = recomendarVia(
+                document.getElementById('indicacao').value,
+                document.getElementById('situacao').value
+            );
             
             divResultado.innerHTML = `
                 <h3>💊 Resultado do Cálculo - ${resultado.titulo}</h3>
@@ -224,7 +328,16 @@
                     <h4>📋 Dados do Paciente:</h4>
                     <p><strong>Peso:</strong> ${peso} kg</p>
                     <p><strong>Idade:</strong> ${idade} anos</p>
-                    <p><strong>Via:</strong> ${document.getElementById('via').value === 'subcutanea' ? 'Subcutânea' : 'Intravenosa'}</p>
+                    <p><strong>Situação:</strong> ${document.getElementById('situacao').options[document.getElementById('situacao').selectedIndex].text}</p>
+                    <p><strong>Via selecionada:</strong> ${resultado.via === 'subcutanea' ? 'Subcutânea' : 'Intravenosa'}</p>
+                </div>
+                
+                <div class="via-recomendada">
+                    <h4>🎯 Recomendação de Via:</h4>
+                    <p><strong>Via:</strong> ${viaRecomendacao.via}</p>
+                    <p><strong>Justificativa:</strong> ${viaRecomendacao.justificativa}</p>
+                    <p><strong>Frequência:</strong> ${viaRecomendacao.frequencia}</p>
+                    <p><strong>Observações:</strong> ${viaRecomendacao.observacao}</p>
                 </div>
                 
                 <div class="dose-correta">
@@ -262,19 +375,13 @@
         function limparFormulario() {
             document.getElementById('formEritropoetina').reset();
             document.getElementById('resultado').style.display = 'none';
+            atualizarOpcoesVia(); // Resetar para via recomendada padrão
         }
         
-        // Exemplo de preenchimento automático para teste
-        function preencherExemplo() {
-            document.getElementById('peso').value = 70;
-            document.getElementById('idade').value = 45;
-            document.getElementById('indicacao').value = 'anemia_critica';
-            document.getElementById('via').value = 'subcutanea';
-            document.getElementById('ferro').value = 'insuficiente';
-        }
-        
-        // Preencher com exemplo ao carregar a página (opcional)
-        // document.addEventListener('DOMContentLoaded', preencherExemplo);
+        // Inicializar o formulário quando a página carregar
+        document.addEventListener('DOMContentLoaded', function() {
+            atualizarOpcoesVia();
+        });
     </script>
 </body>
 </html>
