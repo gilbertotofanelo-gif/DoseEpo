@@ -1,80 +1,150 @@
-function calcularDoseEritropoetina(config) {
-  // Configurações fornecidas pelo usuário
-  const {
-    pesoKg,
-    idade = null,
-    indicacao = 'anemia renal', // 'anemia crítica', 'anemia renal', etc.
-    doseUkg = null, // Se não fornecida, aplica valores sugeridos por indicação
-    divisao = 'diária', // 'diária', '12h', '3x semana'
-    ferroAdequado = false,
-    via = 'subcutânea' // 'subcutânea' ou 'intravenosa'
-  } = config;
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Eritropoetina</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .resultado {
+            background: #e8f4fd;
+            padding: 15px;
+            border-left: 4px solid #2196F3;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        button {
+            background: #2196F3;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: #1976D2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Calculadora de Dose de Eritropoetina</h1>
+        
+        <button onclick="executarCalculo()">Calcular Dose Exemplo</button>
+        
+        <div id="resultado"></div>
+    </div>
 
-  // Dosagem padrão conforme indicação clínica
-  let doseBase;
-  if (doseUkg) {
-    doseBase = doseUkg;
-  } else {
-    if (indicacao == 'anemia crítica') {
-      doseBase = 300; // pode ser ajustado conforme o protocolo local
-    } else if (indicacao == 'anemia renal') {
-      doseBase = 150;
-    } else {
-      doseBase = 150;
-    }
-  }
+    <script>
+        function calcularDoseEritropoetina(config) {
+            // Configurações fornecidas pelo usuário
+            const {
+                pesoKg,
+                idade = null,
+                indicacao = 'anemia renal',
+                doseUkg = null,
+                divisao = 'diária',
+                ferroAdequado = false,
+                via = 'subcutânea'
+            } = config;
 
-  // Ajuste para crianças (exemplo genérico)
-  let doseFinal = doseBase;
-  if (idade && idade < 18) {
-    doseFinal = doseBase * 1.5; // Crianças podem necessitar dose maior
-  }
+            // Dosagem padrão conforme indicação clínica
+            let doseBase;
+            if (doseUkg) {
+                doseBase = doseUkg;
+            } else {
+                if (indicacao == 'anemia crítica') {
+                    doseBase = 300;
+                } else if (indicacao == 'anemia renal') {
+                    doseBase = 150;
+                } else {
+                    doseBase = 150;
+                }
+            }
 
-  // Dose total diária
-  const doseTotalDia = pesoKg * doseFinal;
+            // Ajuste para crianças
+            let doseFinal = doseBase;
+            if (idade && idade < 18) {
+                doseFinal = doseBase * 1.5;
+            }
 
-  // Recomendações
-  let recomendaFerro = ferroAdequado ? 'Ferro adequado, seguir.' : 'Recomenda-se garantir reposição de ferro antes e durante o uso.';
-  let alertaLab = 'Monitorar hemoglobina/hematócrito semanalmente. Ajustar dose conforme resposta laboratorial.';
-  let alertaEfeitos = 'Aviso: risco de hipertensão, trombose, reação alérgica. Acompanhar pressão arterial e exames de coagulação.';
-  let viaAdmin = via === 'intravenosa'
-    ? 'Via intravenosa recomendada para situações agudas ou UTI.'
-    : 'Via subcutânea é eficaz e pode ser usada em casos crônicos ou quando adequada.';
-  let doseDividida = divisao === '12h'
-    ? `Divida a dose diária em duas administrações de ${doseTotalDia / 2} U a cada 12 horas.`
-    : divisao === '3x semana' 
-      ? `Divida a dose total semanal (${doseTotalDia * 7}) U em 3 aplicações semanais.`
-      : `Administração diária recomendada: ${doseTotalDia} U/dia.`;
+            // Dose total diária
+            const doseTotalDia = pesoKg * doseFinal;
 
-  return {
-    pesoKg,
-    idade,
-    indicacao,
-    dosePorKg: doseFinal,
-    doseTotalDia,
-    doseDividida,
-    recomendaFerro,
-    viaAdmin,
-    alertaLab,
-    alertaEfeitos,
-  };
-}
+            // Recomendações
+            let recomendaFerro = ferroAdequado ? 'Ferro adequado, seguir.' : 'Recomenda-se garantir reposição de ferro antes e durante o uso.';
+            let alertaLab = 'Monitorar hemoglobina/hematócrito semanalmente. Ajustar dose conforme resposta laboratorial.';
+            let alertaEfeitos = 'Aviso: risco de hipertensão, trombose, reação alérgica. Acompanhar pressão arterial e exames de coagulação.';
+            let viaAdmin = via === 'intravenosa'
+                ? 'Via intravenosa recomendada para situações agudas ou UTI.'
+                : 'Via subcutânea é eficaz e pode ser usada em casos crônicos ou quando adequada.';
+            let doseDividida = divisao === '12h'
+                ? `Divida a dose diária em duas administrações de ${(doseTotalDia / 2).toFixed(0)} U a cada 12 horas.`
+                : divisao === '3x semana' 
+                    ? `Divida a dose total semanal (${(doseTotalDia * 7).toFixed(0)} U) em 3 aplicações semanais.`
+                    : `Administração diária recomendada: ${doseTotalDia.toFixed(0)} U/dia.`;
 
-// Exemplo de uso:
-const configPaciente = {
-  pesoKg: 70,
-  idade: 45,
-  indicacao: 'anemia crítica',
-  ferroAdequado: false,
-  via: 'intravenosa',
-  divisao: '12h'
-};
-const resultado = calcularDoseEritropoetina(configPaciente);
+            return {
+                pesoKg,
+                idade,
+                indicacao,
+                dosePorKg: doseFinal,
+                doseTotalDia,
+                doseDividida,
+                recomendaFerro,
+                viaAdmin,
+                alertaLab,
+                alertaEfeitos,
+            };
+        }
 
-console.log(`Dose: ${resultado.doseTotalDia} U/dia`);
-console.log(resultado.doseDividida);
-console.log(resultado.recomendaFerro);
-console.log(resultado.viaAdmin);
-console.log(resultado.alertaLab);
-console.log(resultado.alertaEfeitos);
+        function executarCalculo() {
+            // Exemplo de uso
+            const configPaciente = {
+                pesoKg: 70,
+                idade: 45,
+                indicacao: 'anemia crítica',
+                ferroAdequado: false,
+                via: 'intravenosa',
+                divisao: '12h'
+            };
 
+            const resultado = calcularDoseEritropoetina(configPaciente);
+
+            // Exibir resultados na página
+            const divResultado = document.getElementById('resultado');
+            divResultado.innerHTML = `
+                <div class="resultado">
+                    <h3>Resultado do Cálculo:</h3>
+                    <p><strong>Peso:</strong> ${resultado.pesoKg} kg</p>
+                    <p><strong>Idade:</strong> ${resultado.idade} anos</p>
+                    <p><strong>Indicação:</strong> ${resultado.indicacao}</p>
+                    <p><strong>Dose por kg:</strong> ${resultado.dosePorKg} U/kg</p>
+                    <p><strong>Dose total diária:</strong> ${resultado.doseTotalDia.toFixed(0)} U</p>
+                    <p><strong>Esquema posológico:</strong> ${resultado.doseDividida}</p>
+                    <p><strong>Ferro:</strong> ${resultado.recomendaFerro}</p>
+                    <p><strong>Via de administração:</strong> ${resultado.viaAdmin}</p>
+                    <p><strong>Monitoramento laboratorial:</strong> ${resultado.alertaLab}</p>
+                    <p><strong>Alertas:</strong> ${resultado.alertaEfeitos}</p>
+                </div>
+            `;
+        }
+
+        // Executar automaticamente quando a página carregar
+        document.addEventListener('DOMContentLoaded', executarCalculo);
+    </script>
+</body>
+</html>
