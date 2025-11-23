@@ -96,6 +96,20 @@
             margin: 10px 0;
             border-radius: 5px;
         }
+        .estrategia {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .plano {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
         #grupoGestacao {
             display: none;
             background: #fff3cd;
@@ -114,8 +128,8 @@
 </head>
 <body>
     <div class="container">
-        <h1>🚺🚹 Calculadora de Eritropoetina - Ajustada por Sexo</h1>
-        <p class="alerta">⚠️ <strong>ATENÇÃO:</strong> Mulheres e homens têm valores de referência diferentes para hemoglobina.</p>
+        <h1>🚺🚹 Calculadora de Eritropoetina - Versão Completa</h1>
+        <p class="alerta">⚠️ <strong>ATENÇÃO:</strong> Este é um instrumento educacional. Sempre consulte a bula atualizada e protocolos institucionais.</p>
         
         <form id="formEritropoetina">
             <div class="form-group">
@@ -150,11 +164,23 @@
             
             <div class="form-group">
                 <label for="indicacao">Indicação Clínica:</label>
-                <select id="indicacao" name="indicacao" required>
+                <select id="indicacao" name="indicacao" required onchange="atualizarOpcoesVia()">
                     <option value="anemia_renal">Anemia Renal Crônica</option>
-                    <option value="anemia_critica">Anemia Crítica</option>
+                    <option value="anemia_critica">Anemia Crítica (UTI/Paciente Hospitalizado)</option>
                     <option value="quimioterapia">Anemia em Quimioterapia</option>
-                    <option value="falciforme">Doença Falciforme</option>
+                    <option value="falciforme">Doença Falciforme (USO RESTRITO)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="situacao">Situação do Paciente:</label>
+                <select id="situacao" name="situacao" required onchange="atualizarOpcoesVia()">
+                    <option value="ambulatorial">Paciente Ambulatorial</option>
+                    <option value="hospitalizado">Paciente Hospitalizado</option>
+                    <option value="hemodialise">Paciente em Hemodiálise</option>
+                    <option value="dialise_peritoneal">Paciente em Diálise Peritoneal</option>
+                    <option value="uti">Paciente em UTI</option>
+                    <option value="crise_aguda">Em Crise Aguda (Falciforme)</option>
                 </select>
             </div>
             
@@ -162,30 +188,25 @@
                 <label for="aceitaTransfusao">Paciente Aceita Transfusão?</label>
                 <select id="aceitaTransfusao" name="aceitaTransfusao" required onchange="atualizarFormulario()">
                     <option value="sim">Sim</option>
-                    <option value="nao">Não - Restrição Transfusional</option>
+                    <option value="nao">NÃO - Restrição Transfusional</option>
                 </select>
             </div>
             
             <div id="grupoRecusa">
                 <div class="form-group">
-                    <label for="motivoRecusa">Motivo da Recusa:</label>
+                    <label for="motivoRecusa">Motivo da Recusa de Transfusão:</label>
                     <select id="motivoRecusa" name="motivoRecusa">
-                        <option value="religioso">Religioso</option>
-                        <option value="pessoal">Pessoal</option>
-                        <option value="outro">Outro</option>
+                        <option value="religioso">Religioso (Testemunhas de Jeová)</option>
+                        <option value="pessoal">Pessoal/Filosófico</option>
+                        <option value="alergia">Alergia/Reação Prévia</option>
+                        <option value="outro">Outro Motivo</option>
                     </select>
                 </div>
-            </div>
-            
-            <div class="form-group">
-                <label for="situacao">Situação do Paciente:</label>
-                <select id="situacao" name="situacao" required>
-                    <option value="ambulatorial">Ambulatorial</option>
-                    <option value="hospitalizado">Hospitalizado</option>
-                    <option value="hemodialise">Hemodiálise</option>
-                    <option value="dialise_peritoneal">Diálise Peritoneal</option>
-                    <option value="uti">UTI</option>
-                </select>
+                
+                <div class="form-group">
+                    <label for="observacoesRecusa">Observações sobre a Recusa:</label>
+                    <textarea id="observacoesRecusa" name="observacoesRecusa" rows="3" placeholder="Documente consentimento informado, alternativas discutidas, etc."></textarea>
+                </div>
             </div>
             
             <div class="form-group">
@@ -206,6 +227,7 @@
             
             <button type="button" onclick="calcularDose()">Calcular Dose</button>
             <button type="button" onclick="limparFormulario()" class="btn-secondary">Limpar</button>
+            <button type="button" onclick="preencherExemploCompleto()" class="btn-secondary">Exemplo Completo</button>
         </form>
         
         <div id="resultado" class="resultado"></div>
@@ -218,18 +240,112 @@
             const grupoGestacao = document.getElementById('grupoGestacao');
             const grupoRecusa = document.getElementById('grupoRecusa');
             
-            // Mostrar/ocultar grupo de gestação
             if (sexo === 'gestante') {
                 grupoGestacao.style.display = 'block';
             } else {
                 grupoGestacao.style.display = 'none';
             }
             
-            // Mostrar/ocultar grupo de recusa de transfusão
             if (aceitaTransfusao === 'nao') {
                 grupoRecusa.style.display = 'block';
+                document.body.style.backgroundColor = '#fff0f0';
             } else {
                 grupoRecusa.style.display = 'none';
+                document.body.style.backgroundColor = '#f0f8ff';
+            }
+            
+            atualizarOpcoesVia();
+        }
+        
+        function atualizarOpcoesVia() {
+            const indicacao = document.getElementById('indicacao').value;
+            const situacao = document.getElementById('situacao').value;
+            const viaSelect = document.getElementById('via');
+            
+            viaSelect.innerHTML = '';
+            
+            let viaRecomendada = recomendarVia(indicacao, situacao);
+            
+            const opcaoSC = document.createElement('option');
+            opcaoSC.value = 'subcutanea';
+            opcaoSC.textContent = 'Subcutânea';
+            if (viaRecomendada.via === 'subcutânea') {
+                opcaoSC.selected = true;
+            }
+            
+            const opcaoIV = document.createElement('option');
+            opcaoIV.value = 'intravenosa';
+            opcaoIV.textContent = 'Intravenosa';
+            if (viaRecomendada.via === 'intravenosa') {
+                opcaoIV.selected = true;
+            }
+            
+            viaSelect.appendChild(opcaoSC);
+            viaSelect.appendChild(opcaoIV);
+        }
+        
+        function recomendarVia(indicacao, situacao) {
+            if (indicacao === 'falciforme') {
+                if (situacao === 'crise_aguda') {
+                    return {
+                        via: 'intravenosa',
+                        justificativa: 'CONTRAINDICADO durante crise aguda - considerar apenas em situações específicas',
+                        frequencia: 'NÃO RECOMENDADO',
+                        observacao: '🚨 ALTO RISCO de complicações durante crise aguda'
+                    };
+                } else {
+                    return {
+                        via: 'subcutânea',
+                        justificativa: 'Via preferencial para uso ambulatorial em casos selecionados',
+                        frequencia: '3 vezes por semana',
+                        observacao: 'Apenas em casos específicos com acompanhamento hematológico'
+                    };
+                }
+            }
+            
+            if (indicacao === 'anemia_renal') {
+                if (situacao === 'hemodialise') {
+                    return {
+                        via: 'intravenosa',
+                        justificativa: 'Paciente em hemodiálise - via IV durante sessão dialítica',
+                        frequencia: '3 vezes por semana',
+                        observacao: 'Administrar no final da sessão de hemodiálise'
+                    };
+                } else {
+                    return {
+                        via: 'subcutânea',
+                        justificativa: 'Paciente não dialítico ou em diálise peritoneal',
+                        frequencia: '1-3 vezes por semana',
+                        observacao: 'Via preferencial para tratamento ambulatorial'
+                    };
+                }
+            }
+
+            if (indicacao === 'anemia_critica') {
+                if (situacao === 'uti' || situacao === 'hospitalizado') {
+                    return {
+                        via: 'intravenosa',
+                        justificativa: 'Paciente crítico hospitalizado com acesso venoso',
+                        frequencia: '1 vez por semana',
+                        observacao: 'Esquema fixo de 40.000 U/semana'
+                    };
+                } else {
+                    return {
+                        via: 'subcutânea',
+                        justificativa: 'Paciente estável ou em transição para ambulatório',
+                        frequencia: '1 vez por semana',
+                        observacao: 'Mesma eficácia com maior praticidade'
+                    };
+                }
+            }
+
+            if (indicacao === 'quimioterapia') {
+                return {
+                    via: 'subcutânea',
+                    justificativa: 'Paciente ambulatorial em quimioterapia',
+                    frequencia: '1 vez por semana ou 3 vezes por semana',
+                    observacao: 'Prefere-se SC para maior comodidade do paciente'
+                };
             }
         }
         
@@ -311,8 +427,8 @@
                 return;
             }
             
-            // Obter ajustes por sexo
             const ajusteSexo = ajustarPorSexo(sexo, idade, trimestre);
+            const viaRecomendacao = recomendarVia(indicacao, situacao);
             
             let resultado;
             
@@ -331,7 +447,81 @@
                 }
             }
             
-            exibirResultado(resultado, peso, idade, situacao, aceitaTransfusao, ajusteSexo);
+            exibirResultado(resultado, peso, idade, situacao, aceitaTransfusao, ajusteSexo, viaRecomendacao);
+        }
+        
+        function calcularPacienteSemTransfusao(peso, idade, indicacao, situacao, via, ferro, motivoRecusa, ajusteSexo) {
+            const ALERTAS_CRITICOS = [
+                '🚨 PACIENTE COM RESTRIÇÃO A TRANSFUSÃO - ESTRATÉGIA CRÍTICA',
+                '🚨 Nível de Hb alvo deve ser mantido MAIS ALTO (10-11 g/dL)',
+                '🚨 Monitorização LABORATORIAL MAIS FREQUENTE',
+                '🚨 Risco de anemia grave irreversível',
+                '🚨 Considerar alternativas: ferro IV, ácido fólico, vit B12',
+                '🚨 Planejar estratégia para sangramentos agudos'
+            ];
+
+            let dose, frequencia, observacoes, doseTotal;
+
+            if (indicacao === 'anemia_renal') {
+                dose = `${(75 * ajusteSexo.fatorDose).toFixed(0)}-${(125 * ajusteSexo.fatorDose).toFixed(0)} U/kg`;
+                doseTotal = `${(peso * 100 * ajusteSexo.fatorDose).toFixed(0)} U (média)`;
+                frequencia = '3 vezes por semana';
+                observacoes = 'Dose ligeiramente aumentada para manter reserva hematológica adequada';
+                
+            } else if (indicacao === 'anemia_critica') {
+                dose = 'ESQUEMA FIXO COM MONITORIZAÇÃO REFORÇADA';
+                doseTotal = '40.000 U';
+                frequencia = '1 vez por semana + hemograma 2x/semana';
+                observacoes = 'Paciente crítico sem opção de transfusão - monitorização intensiva';
+                
+            } else if (indicacao === 'falciforme') {
+                dose = `${(100 * ajusteSexo.fatorDose).toFixed(0)}-${(150 * ajusteSexo.fatorDose).toFixed(0)} U/kg`;
+                doseTotal = `${(peso * 125 * ajusteSexo.fatorDose).toFixed(0)} U`;
+                frequencia = '3 vezes por semana + hemograma 2x/semana';
+                observacoes = 'Risco duplo - doença falciforme + sem transfusão. EXTREMO CUIDADO';
+                
+            } else {
+                dose = `${(75 * ajusteSexo.fatorDose).toFixed(0)}-${(125 * ajusteSexo.fatorDose).toFixed(0)} U/kg`;
+                doseTotal = `${(peso * 100 * ajusteSexo.fatorDose).toFixed(0)} U`;
+                frequencia = '3 vezes por semana';
+                observacoes = 'Estratégia conservadora mas com monitorização reforçada';
+            }
+
+            return {
+                titulo: `PACIENTE QUE NÃO ACEITA TRANSFUSÃO - ${motivoRecusa.toUpperCase()}`,
+                dose: dose,
+                doseTotal: doseTotal,
+                frequencia: frequencia,
+                observacoes: observacoes,
+                alvoHb: '10-11 g/dL (MARGEM DE SEGURANÇA)',
+                ajuste: 'AJUSTE IMEDIATO se Hb < 10 g/dL. MANTER RESERVA HEMATOLÓGICA.',
+                via: via,
+                alertasCriticos: ALERTAS_CRITICOS,
+                estrategiasAlternativas: [
+                    '✅ Ferro intravenoso de alta dose',
+                    '✅ Ácido fólico 5 mg/dia',
+                    '✅ Vitamina B12 se deficiência',
+                    '✅ Eritropoetina em dose de resgate se Hb < 8 g/dL',
+                    '✅ Considerar agentes estimuladores de eritropoese de nova geração',
+                    '✅ Otimização nutricional: proteínas, ferro, vitaminas'
+                ],
+                planoContingencia: [
+                    '📋 Hemograma 2-3x/semana inicialmente',
+                    '📋 Ferro sérico e saturação weekly',
+                    '📋 Protocolo de ação rápida se Hb < 8 g/dL',
+                    '📋 Contato direto com hematologista 24h',
+                    '📋 Documentar consentimento informado específico',
+                    '📋 Plano para sangramento agudo: agentes antifibrinolíticos'
+                ],
+                criteriosInternacao: [
+                    '🏥 Hb < 8 g/dL com sintomas',
+                    '🏥 Queda > 2 g/dL em 24h',
+                    '🏥 Sangramento ativo',
+                    '🏥 Instabilidade hemodinâmica',
+                    '🏥 Necessidade de procedimento invasivo'
+                ],
+                ajusteSexo: ajusteSexo
+            };
         }
         
         function calcularAnemiaRenal(peso, idade, via, situacao, ferro, ajusteSexo) {
@@ -369,7 +559,7 @@
             const doseFixa = 40000;
             
             return {
-                titulo: 'ANEMIA CRÍTICA',
+                titulo: 'ANEMIA CRÍTICA (UTI/PACIENTE HOSPITALIZADO)',
                 dose: 'ESQUEMA FIXO',
                 doseTotal: `${doseFixa.toFixed(0)} U`,
                 frequencia: '1 vez por semana',
@@ -381,13 +571,89 @@
             };
         }
         
-        // [Outras funções de cálculo...]
+        function calcularQuimioterapia(peso, idade, via, situacao, ferro, ajusteSexo) {
+            const dosePorKg = 150 * ajusteSexo.fatorDose;
+            const doseTotal = peso * dosePorKg;
+            const doseFixa = 40000;
+            
+            return {
+                titulo: 'ANEMIA EM QUIMIOTERAPIA',
+                dose: `${dosePorKg.toFixed(0)} U/kg ou esquema fixo`,
+                doseTotal: `${doseTotal.toFixed(0)} U (3x/semana) ou ${doseFixa} U (semanal)`,
+                frequencia: '3 vezes por semana ou 1 vez por semana',
+                observacoes: 'Iniciar apenas se Hb < 10 g/dL. Suspender após conclusão da quimioterapia.',
+                alvoHb: ajusteSexo.alvoTerapeutico,
+                ajuste: `Suspender se Hb > 12 g/dL. ${ajusteSexo.motivoAjuste}`,
+                via: via,
+                ajusteSexo: ajusteSexo
+            };
+        }
         
-        function exibirResultado(resultado, peso, idade, situacao, aceitaTransfusao, ajusteSexo) {
+        function calcularAnemiaFalciforme(peso, idade, via, situacao, ferro, ajusteSexo) {
+            if (situacao === 'crise_aguda') {
+                return {
+                    titulo: 'DOENÇA FALCIFORME - CRISE AGUDA',
+                    dose: 'CONTRAINDICADO',
+                    doseTotal: 'NÃO ADMINISTRAR',
+                    frequencia: 'NÃO RECOMENDADO',
+                    observacoes: '🚨 ALTO RISCO de complicações durante crise vaso-oclusiva aguda',
+                    alvoHb: 'NÃO APLICÁVEL',
+                    ajuste: 'CONTRAINDICADO durante crise aguda',
+                    via: via,
+                    alertasEspecificos: [
+                        '🚨 CONTRAINDICADO durante crise aguda',
+                        '🚨 Risco de síndrome torácica aguda',
+                        '🚨 Pode precipitar crise vaso-oclusiva',
+                        '💡 Considerar apenas após resolução da crise',
+                        '💡 Avaliação hematológica obrigatória'
+                    ],
+                    contraindicacoes: [
+                        'Crise vaso-oclusiva ativa',
+                        'Síndrome torácica aguda',
+                        'Hb basal > 8 g/dL',
+                        'Histórico de trombose recente'
+                    ],
+                    ajusteSexo: ajusteSexo
+                };
+            }
+            
+            const dosePorKg = 125 * ajusteSexo.fatorDose;
+            const doseTotal = peso * dosePorKg;
+            
+            return {
+                titulo: 'DOENÇA FALCIFORME (USO RESTRITO)',
+                dose: `${(100 * ajusteSexo.fatorDose).toFixed(0)}-${(150 * ajusteSexo.fatorDose).toFixed(0)} U/kg`,
+                doseTotal: `${doseTotal.toFixed(0)} U`,
+                frequencia: '3 vezes por semana',
+                observacoes: 'Adultos: considerar apenas em anemia grave refratária com Hb < 7 g/dL',
+                alvoHb: 'NÃO ULTRAPASSAR 10 g/dL',
+                ajuste: `SUSPENDER IMEDIATAMENTE se Hb > 10 g/dL. Risco de crise vaso-oclusiva. ${ajusteSexo.motivoAjuste}`,
+                via: via,
+                alertasEspecificos: [
+                    '🚨 ALTO RISCO de crises vaso-oclusivas',
+                    '🚨 Pode precipitar síndrome torácica aguda',
+                    '🚨 Aumento do risco de trombose',
+                    '✅ Considerar apenas quando benefício > risco',
+                    '✅ Monitorização HEMATOLÓGICA rigorosa',
+                    '💡 Manter hidratação adequada',
+                    '💡 Monitorar viscosidade sanguínea'
+                ],
+                contraindicacoes: [
+                    'Hb > 10 g/dL',
+                    'Histórico de trombose recente',
+                    'Crise vaso-oclusiva frequente',
+                    'Síndrome torácica aguda recorrente',
+                    'Pacientes com níveis basais de Hb > 8 g/dL'
+                ],
+                ajusteSexo: ajusteSexo
+            };
+        }
+        
+        function exibirResultado(resultado, peso, idade, situacao, aceitaTransfusao, ajusteSexo, viaRecomendacao) {
             const divResultado = document.getElementById('resultado');
             const necessidadeFerro = document.getElementById('ferro').value === 'insuficiente' 
-                ? '🚨 REPOSIÇÃO DE FERRO OBRIGATÓRIA' 
-                : '✅ Níveis adequados';
+                ? '🚨 REPOSIÇÃO DE FERRO OBRIGATÓRIA antes de iniciar tratamento'
+                : '✅ Níveis de ferro adequados para início do tratamento';
             
             let html = `
                 <h3>💊 ${resultado.titulo}</h3>
@@ -398,7 +664,8 @@
                     <p><strong>Idade:</strong> ${idade} anos</p>
                     <p><strong>Sexo:</strong> ${document.getElementById('sexo').options[document.getElementById('sexo').selectedIndex].text}</p>
                     <p><strong>Situação:</strong> ${document.getElementById('situacao').options[document.getElementById('situacao').selectedIndex].text}</p>
-                    <p><strong>Restrição Transfusional:</strong> ${aceitaTransfusao === 'nao' ? '🚫 NÃO ACEITA' : '✅ Aceita'}</p>
+                    <p><strong>Restrição Transfusional:</strong> ${aceitaTransfusao === 'nao' ? '🚫 NÃO ACEITA TRANSFUSÃO' : '✅ Aceita transfusão'}</p>
+                    ${aceitaTransfusao === 'nao' ? `<p><strong>Motivo:</strong> ${document.getElementById('motivoRecusa').options[document.getElementById('motivoRecusa').selectedIndex].text}</p>` : ''}
                 </div>
                 
                 <div class="info-sexo">
@@ -407,6 +674,14 @@
                     <p><strong>Alvo Terapêutico:</strong> ${ajusteSexo.alvoTerapeutico}</p>
                     <p><strong>Fator de Ajuste:</strong> ${ajusteSexo.fatorDose}x (${ajusteSexo.motivoAjuste})</p>
                     <p><strong>Observações:</strong> ${ajusteSexo.observacaoSexo}</p>
+                </div>
+                
+                <div class="via-recomendada">
+                    <h4>💉 Recomendação de Via:</h4>
+                    <p><strong>Via Recomendada:</strong> ${viaRecomendacao.via}</p>
+                    <p><strong>Justificativa:</strong> ${viaRecomendacao.justificativa}</p>
+                    <p><strong>Frequência:</strong> ${viaRecomendacao.frequencia}</p>
+                    <p><strong>Observações:</strong> ${viaRecomendacao.observacao}</p>
                 </div>`;
             
             if (ajusteSexo.consideracoesEspeciais) {
@@ -421,24 +696,101 @@
                 </div>`;
             }
             
-            html += `
+            if (resultado.dose !== 'CONTRAINDICADO') {
+                html += `
                 <div class="dose-correta">
-                    <h4>💉 Posologia Recomendada:</h4>
+                    <h4>💊 Posologia Recomendada:</h4>
                     <p><strong>Dose:</strong> ${resultado.dose}</p>
                     <p><strong>Dose Total:</strong> ${resultado.doseTotal}</p>
                     <p><strong>Frequência:</strong> ${resultado.frequencia}</p>
                     <p><strong>Observações:</strong> ${resultado.observacoes}</p>
+                </div>`;
+            } else {
+                html += `
+                <div class="alerta-critico">
+                    <h4>🚨 CONTRAINDICAÇÃO ABSOLUTA:</h4>
+                    <p><strong>Não administrar eritropoetina durante crise aguda</strong></p>
+                    <p><strong>Motivo:</strong> ${resultado.observacoes}</p>
+                </div>`;
+            }
+            
+            if (aceitaTransfusao === 'nao') {
+                html += `
+                <div class="alerta-critico">
+                    <h4>🚨 ALERTAS CRÍTICOS - SEM TRANSFUSÃO:</h4>
+                    <ul>`;
+                resultado.alertasCriticos.forEach(alerta => {
+                    html += `<li>${alerta}</li>`;
+                });
+                html += `</ul>
                 </div>
                 
+                <div class="estrategia">
+                    <h4>💡 Estratégias Alternativas:</h4>
+                    <ul>`;
+                resultado.estrategiasAlternativas.forEach(estrategia => {
+                    html += `<li>${estrategia}</li>`;
+                });
+                html += `</ul>
+                </div>
+                
+                <div class="plano">
+                    <h4>📋 Plano de Contingência:</h4>
+                    <ul>`;
+                resultado.planoContingencia.forEach(item => {
+                    html += `<li>${item}</li>`;
+                });
+                html += `</ul>
+                </div>`;
+            }
+            
+            if (resultado.alertasEspecificos) {
+                html += `
+                <div class="alerta-critico">
+                    <h4>⚠️ Alertas Específicos:</h4>
+                    <ul>`;
+                resultado.alertasEspecificos.forEach(alerta => {
+                    html += `<li>${alerta}</li>`;
+                });
+                html += `</ul>
+                </div>`;
+            }
+            
+            html += `
                 <div class="alerta">
                     <h4>⚡ Condições e Ajustes:</h4>
                     <p><strong>Alvo de Hemoglobina:</strong> ${resultado.alvoHb}</p>
                     <p><strong>Ajuste de Dose:</strong> ${resultado.ajuste}</p>
                     <p><strong>Status do Ferro:</strong> ${necessidadeFerro}</p>
-                </div>`;
+                </div>
+                
+                <div class="alerta">
+                    <h4>📊 Monitoramento Recomendado:</h4>
+                    <ul>
+                        <li>Hemograma completo 2x/semana inicialmente</li>
+                        <li>Monitorar pressão arterial regularmente</li>
+                        <li>Avaliar surgimento de crises dolorosas (falciforme)</li>
+                        <li>Monitorar função renal e hepática</li>
+                        <li>Ferro sérico e saturação de transferrina</li>
+                    </ul>
+                </div>
+                
+                <p><em>💡 Lembrete: Sempre verificar a bula específica do produto e protocolos institucionais.</em></p>`;
             
             divResultado.innerHTML = html;
             divResultado.style.display = 'block';
+        }
+        
+        function preencherExemploCompleto() {
+            document.getElementById('peso').value = 68;
+            document.getElementById('idade').value = 45;
+            document.getElementById('sexo').value = 'mulher';
+            document.getElementById('indicacao').value = 'anemia_renal';
+            document.getElementById('situacao').value = 'hemodialise';
+            document.getElementById('aceitaTransfusao').value = 'sim';
+            document.getElementById('via').value = 'intravenosa';
+            document.getElementById('ferro').value = 'insuficiente';
+            atualizarFormulario();
         }
         
         function limparFormulario() {
@@ -450,56 +802,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             atualizarFormulario();
         });
-        
-        // [Funções auxiliares...]
-        function calcularPacienteSemTransfusao(peso, idade, indicacao, situacao, via, ferro, motivoRecusa, ajusteSexo) {
-            // Implementação similar às anteriores, mas usando ajusteSexo
-            return {
-                titulo: `PACIENTE SEM TRANSFUSÃO - ${document.getElementById('sexo').options[document.getElementById('sexo').selectedIndex].text.toUpperCase()}`,
-                dose: '75-125 U/kg',
-                doseTotal: `${(peso * 100).toFixed(0)} U`,
-                frequencia: '3 vezes por semana',
-                observacoes: 'Estratégia intensiva para paciente com restrição transfusional',
-                alvoHb: ajusteSexo.alvoTerapeutico,
-                ajuste: `Monitorização intensiva. ${ajusteSexo.motivoAjuste}`,
-                via: via,
-                ajusteSexo: ajusteSexo
-            };
-        }
-        
-        function calcularQuimioterapia(peso, idade, via, situacao, ferro, ajusteSexo) {
-            const dosePorKg = 150 * ajusteSexo.fatorDose;
-            const doseTotal = peso * dosePorKg;
-            
-            return {
-                titulo: 'ANEMIA EM QUIMIOTERAPIA',
-                dose: `${dosePorKg.toFixed(0)} U/kg`,
-                doseTotal: `${doseTotal.toFixed(0)} U`,
-                frequencia: '3 vezes por semana',
-                observacoes: 'Iniciar apenas se Hb < 10 g/dL',
-                alvoHb: ajusteSexo.alvoTerapeutico,
-                ajuste: `Suspender se Hb > 12 g/dL. ${ajusteSexo.motivoAjuste}`,
-                via: via,
-                ajusteSexo: ajusteSexo
-            };
-        }
-        
-        function calcularAnemiaFalciforme(peso, idade, via, situacao, ferro, ajusteSexo) {
-            const dosePorKg = 125 * ajusteSexo.fatorDose;
-            const doseTotal = peso * dosePorKg;
-            
-            return {
-                titulo: 'DOENÇA FALCIFORME',
-                dose: `${dosePorKg.toFixed(0)} U/kg`,
-                doseTotal: `${doseTotal.toFixed(0)} U`,
-                frequencia: '3 vezes por semana',
-                observacoes: 'USO RESTRITO - Apenas casos selecionados',
-                alvoHb: 'NÃO ULTRAPASSAR 10 g/dL',
-                ajuste: `SUSPENDER se Hb > 10 g/dL. ${ajusteSexo.motivoAjuste}`,
-                via: via,
-                ajusteSexo: ajusteSexo
-            };
-        }
     </script>
 </body>
 </html>
